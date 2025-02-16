@@ -116,17 +116,23 @@ void plot_pattern_cut(struct phased_array* a, double phi) {
  *
  */
     
-    double scale = 2; 
+    double scale = 1; 
     double norm = a->m * a->n;
 
-    for (int i = 0; i <= 20: i++) {
-        for (int j = -1.5, j <= 1.5, j += 0.02) {
-            amp = 10*log10(cabsf(FFT_2D(w, a->m, a->n, a->k, a->d, j, phi))/norm);          
-            if amp >= (-1 * i * scale) {
-                printf('*');
+    double amp;
+
+    printf("%d\n", a->m);
+    printf("%.1f%+.1fi\n", creal(a->w[1][1]), cimag(a->w[1][1]));
+
+    for (int i = 0; i <= 20; i++) {
+        for (double j = -0.5; j < 0.52; j += 0.02) {
+            amp = 20*log10(cabs(FFT_2D(a->w, a->m, a->n, a->k, a->d, j, phi))/norm);          
+            
+            if (amp >= -1 * i / scale) {
+                printf("* ");
             }
             else {
-                printf(" ");
+                printf("  ");
             }
         }
         printf("\n");
@@ -134,71 +140,28 @@ void plot_pattern_cut(struct phased_array* a, double phi) {
 }
 
 struct phased_array* create_array(int m, int n, double freq, double d) {
-    struct phased_array* a;
+    struct phased_array* a = malloc(sizeof(struct phased_array));
 
     a->m = m;
     a->n = n;
     a->w = alloc_array_2D(m, n, 1 + 0*I);
     a->k = wavenumber(freq);
+    a->d = d;
 
     return a;
 }
 
-int main(void) {
-    int a = 16;
+void free_array(struct phased_array* a) {
+    free_array_2D(a->w, a->m);
+    free(a);
+}
 
-    double siz = 1.0;
-    double step = 0.02;
+int main(int argc, char** argv) {
+    struct phased_array* a = create_array(16, 16, 2e9, 55e-3);
 
-    double complex** w = alloc_array_2D(a, a, 1 + 0*I);
+    plot_pattern_cut(a, atof(argv[1]));
 
-    /*
-    for (int i =0; i<a; i++) {
-        for (int j =0; j<a; j++) {
-            printf("%.1f%+.1fi ", creal(w[i][j]), cimag(w[i][j]));
-        }
-        printf("\n");
-    }
-    */
-
-    double amp;
-    double norm = a * a;
-
-    for (double u=-1 * siz; u <= siz; u += step) {
-        for (double v= -1 * siz; v <= siz; v += step) {
-            double el = asin(v);
-            double az = atan(u / sqrt(1 - (u*u) - (v*v)));
-    
-
-            amp = 10*log10(cabsf(FFT_2D(w, a, a, wavenumber(2e9), 65e-3, el, az))/norm);           
-            //printf("%04.1f ", amp);
-
-            if (amp >= -0.1) {
-                printf("@ ");
-            }
-            else if (amp >= -1) {
-                printf("& ");
-            }
-            else if (amp >= -3) {
-                printf("^ ");
-            }
-            else if (amp >= -10) {
-                printf("; ");
-            }
-            else if (amp >= -15) {
-                printf("* ");
-            }
-            else if (amp >= -20) {
-                printf(". ");
-            }
-            else {
-                printf("  ");
-            }
-        }
-        printf("\n");
-    }  
-
-    free_array_2D(w, a);
+    free_array(a);
 
     return 0;
 }
