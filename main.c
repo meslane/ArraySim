@@ -65,10 +65,14 @@ double FFT_2D(double complex** w, int n_x, int n_y,
 
     double sum = 0;
 
+    double n_0 = (double) n_x / 2.0 - 0.5;
+    double m_0 = (double) n_y / 2.0 - 0.5;
+
+    //printf("%f, %f\n", n_0, m_0);
+
     for (int m=0; m < n_x; m++) {
         for (int n=0; n < n_y; n++) {
-           //sum += w[m][n] * cexp(I * k * sin(el * ((cos(az) * m * d) + (sin(az) * n * d))));
-            sum += w[m][n] * cexp(I*k*d * (m*cos(az)*sin(el) + n*sin(az)*sin(el)));
+            sum += w[m][n] * cexp(I*k * ((n-n_0)*d*cos(az)*sin(el) + (m-m_0)*d*sin(az)*sin(el)));
         }
     }
 
