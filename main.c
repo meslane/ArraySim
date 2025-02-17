@@ -115,7 +115,8 @@ void free_array_2D(double complex** w, int m) {
 void plot_pattern_cut(struct phased_array* a, double phi) {
 /* Plot a 2D pattern cut at the given azimith angle
  *
- *
+ * a = Phased array to plot
+ * phi = Phi angle at which to cut (in radians)
  */
     
     double scale = 1; 
@@ -142,7 +143,13 @@ void plot_pattern_cut(struct phased_array* a, double phi) {
 }
 
 void plot_uv_pattern(struct phased_array* a, double range, double step) {
-    //const static char amp_chars[][32] = {"\e[0;31m@\e[0m", "\e[0;33m%\e[0m", "\e[0;93m#\e[0m", "\e[0;32m*\e[0m", "\e[0;32m+\e[0m", "\e[0;36m=\e[0m", "\e[0;36m-\e[0m", "\e[0;34m:\e[0m", "\e[0;35m.\e[0m"};
+/* Plot the 2D phased array pattern in UV space
+ *
+ * a = Phased array to plot
+ * range = Theta range to plot (max = 1.0)
+ * step = UV step for each character drawn to the terminal
+ */
+
     const static char amp_chars[][32] = {"\e[0;31m@\e[0m", "\e[0;33m%\e[0m", "\e[0;33m#\e[0m", "\e[0;93m*\e[0m", "\e[0;32m+\e[0m", "\e[0;32m=\e[0m", "\e[0;36m-\e[0m", "\e[0;34m:\e[0m", "\e[0;35m.\e[0m"}; 
     const static double amp_levels[] = {-3, -5, -10, -15, -20, -25, -30, -35, -40};
 
@@ -177,6 +184,14 @@ void plot_uv_pattern(struct phased_array* a, double range, double step) {
 }
 
 struct phased_array* create_array(int m, int n, double freq, double d) {
+/* Create a phased array struct
+ *
+ * m = Number of x elements
+ * n = Number of y elements
+ * freq = Frequency of interest (Hz)
+ * d = Distance between elements (meters)
+ */
+
     struct phased_array* a = malloc(sizeof(struct phased_array));
 
     a->m = m;
@@ -189,8 +204,41 @@ struct phased_array* create_array(int m, int n, double freq, double d) {
 }
 
 void free_array(struct phased_array* a) {
+/* free memory allocated to phased array a */
     free_array_2D(a->w, a->m);
     free(a);
+}
+
+double complex ang_to_imag(double mag, double phase) {
+/* Convert a magnitue and phase angle to a complex number 
+ *
+ * mag = magnitude
+ * phase = phase (radians)
+ */
+    double r = mag * cos(phase);
+    double im = mag * sin(phase);
+
+    return CMPLX(r, im);
+}
+
+void steer_array(struct phased_array* a, double theta, double phi) {
+/* Apply weights to steer the phased array to the given theta and phi angle
+ *
+ * a - Pointer to array to steer
+ * theta - Theta pointing angle
+ * phi - Phi pointing angle
+ */
+
+    double n_0 = ((double) a->n - 1.0) / 2.0;
+    double m_0 = ((double) a->m - 1.0) / 2.0;
+
+    double s = a->d * a->k;//steering scaling factor (d/lambda)
+
+    for (int m=0; m < a->m; m++) {
+        for (int n=0; n < a->n; n++) {
+            a->w[m][n] = ang_to_imag(1.0, s * sin(theta) * ((cos(phi) * (m - m_0)) + (sin(phi) * (n - n_0))));
+        }
+    }
 }
 
 int main(int argc, char** argv) {
@@ -202,19 +250,31 @@ int main(int argc, char** argv) {
  * 5: plot resolution
  */
 
-    if (argc < 6) {
+    if (argc < 7) {
         printf("\nCommand Line Arguments:\n");
         printf("1: frequency in Hz\n");
         printf("2: element spacing in meters\n");
         printf("3: x dimension element count\n");
         printf("4: y dimension element connt\n");
-        printf("5: u/v resolution of the plot (0.05 for medium, 0.02 for bigger, etc.)\n\n");
+        printf("5: theta scan angle\n");
+        printf("6: phi scan angle\n");
+        printf("7: u/v resolution of the plot (0.05 for medium, 0.02 for bigger, etc.)\n\n");
         return 1;
     }
 
     struct phased_array* a = create_array(atof(argv[3]), atof(argv[4]), atof(argv[1]), atof(argv[2]));
 
-    plot_uv_pattern(a, 1.0, atof(argv[5]));
+    /*
+    for (int i=0; i<3; i++) {
+        for (int j = 0; j<3; j++) {
+            a->w[i][j] = 0;
+        }
+    }
+    */
+
+    steer_array(a, atof(argv[5]), atof(argv[6]));
+
+    plot_uv_pattern(a, 1.0, atof(argv[7]));
 
     free_array(a);
 
