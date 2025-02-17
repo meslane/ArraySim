@@ -67,8 +67,8 @@ double FFT_2D(double complex** w, int n_x, int n_y,
 
     for (int m=0; m < n_x; m++) {
         for (int n=0; n < n_y; n++) {
-           // sum += w[m][n] * cexp(-1*I * k * ((d*m * u) + (d*n * v)));
-           sum += w[m][n] * cexp(-1 * I * k * sin(el * ((cos(az) * m * d) + (sin(az) * n * d))));
+           //sum += w[m][n] * cexp(I * k * sin(el * ((cos(az) * m * d) + (sin(az) * n * d))));
+            sum += w[m][n] * cexp(I*k*d * (m*cos(az)*sin(el) + n*sin(az)*sin(el)));
         }
     }
 
@@ -176,7 +176,7 @@ struct phased_array* create_array(int m, int n, double freq, double d) {
 
     a->m = m;
     a->n = n;
-    a->w = alloc_array_2D(m, n, 1 + 0*I);
+    a->w = alloc_array_2D(m, n, 1);
     a->k = wavenumber(freq);
     a->d = d;
 
@@ -189,7 +189,9 @@ void free_array(struct phased_array* a) {
 }
 
 int main(int argc, char** argv) {
-    struct phased_array* a = create_array(15, 15, 2e9, 65e-3);
+    struct phased_array* a = create_array(atof(argv[1]), atof(argv[2]), 2e9, 65e-3);
+
+    //a->w[0][0] = 0 + 0*I;
 
     //plot_pattern_cut(a, atof(argv[1]));
     plot_uv_pattern(a, 1.0, 0.02);
