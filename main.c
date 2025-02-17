@@ -194,9 +194,27 @@ void free_array(struct phased_array* a) {
 }
 
 int main(int argc, char** argv) {
-    struct phased_array* a = create_array(atof(argv[1]), atof(argv[2]), 2e9, 65e-3);
+/* args:
+ * 1: frequency (MHz)
+ * 2: spacing
+ * 3: x elements
+ * 4: y elements
+ * 5: plot resolution
+ */
 
-    plot_uv_pattern(a, 1.0, 0.02);
+    if (argc < 6) {
+        printf("\nCommand Line Arguments:\n");
+        printf("1: frequency in Hz\n");
+        printf("2: element spacing in meters\n");
+        printf("3: x dimension element count\n");
+        printf("4: y dimension element connt\n");
+        printf("5: u/v resolution of the plot (0.05 for medium, 0.02 for bigger, etc.)\n\n");
+        return 1;
+    }
+
+    struct phased_array* a = create_array(atof(argv[3]), atof(argv[4]), atof(argv[1]), atof(argv[2]));
+
+    plot_uv_pattern(a, 1.0, atof(argv[5]));
 
     free_array(a);
 
