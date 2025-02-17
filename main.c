@@ -68,9 +68,6 @@ double FFT_2D(double complex** w, int n_x, int n_y,
     double n_0 = ((double) n_x - 1.0) / 2.0;
     double m_0 = ((double) n_y - 1.0) / 2.0;
 
-    double AR = (double) n_y / (double) n_x;
-    //printf("%f, %f\n", n_0, m_0);
-
     for (int m=0; m < n_x; m++) {
         for (int n=0; n < n_y; n++) {
             sum += w[m][n] * cexp(I*k * d * ((m-n_0)*cos(az)*sin(el) + (n-m_0)*sin(az)*sin(el)));
@@ -145,14 +142,15 @@ void plot_pattern_cut(struct phased_array* a, double phi) {
 }
 
 void plot_uv_pattern(struct phased_array* a, double range, double step) {
-    const static char amp_chars[] = {'@', '%', '#', '*', '+', '=', '-', ':', '.'};
+    //const static char amp_chars[][32] = {"\e[0;31m@\e[0m", "\e[0;33m%\e[0m", "\e[0;93m#\e[0m", "\e[0;32m*\e[0m", "\e[0;32m+\e[0m", "\e[0;36m=\e[0m", "\e[0;36m-\e[0m", "\e[0;34m:\e[0m", "\e[0;35m.\e[0m"};
+    const static char amp_chars[][32] = {"\e[0;31m@\e[0m", "\e[0;33m%\e[0m", "\e[0;33m#\e[0m", "\e[0;93m*\e[0m", "\e[0;32m+\e[0m", "\e[0;32m=\e[0m", "\e[0;36m-\e[0m", "\e[0;34m:\e[0m", "\e[0;35m.\e[0m"}; 
     const static double amp_levels[] = {-3, -5, -10, -15, -20, -25, -30, -35, -40};
 
     double norm = a->m * a->n;
     double amp;
     double theta;
     double phi;
-    char draw_char;
+    static char draw_char[32] = {0};
 
     for (double u = -1*range; u < range+step; u += step) {
         for (double v = -1*range; v < range+step; v += step) {
@@ -161,15 +159,17 @@ void plot_uv_pattern(struct phased_array* a, double range, double step) {
             
             amp = 20*log10(cabs(FFT_2D(a->w, a->m, a->n, a->k, a->d, theta, phi))/norm);          
            
-
-            draw_char = ' ';
+            //draw_char = " ";
+            draw_char[0] = '\0';
+            strncat(draw_char, " ", 30);
             for (int i = sizeof(amp_chars) / sizeof(char); i >= 0; i--) {
                 if (amp >= amp_levels[i]) {
-                    draw_char = amp_chars[i];
+                    draw_char[0] = '\0';
+                    strncat(draw_char, amp_chars[i], 30);
                 }
             }
 
-            printf("%c ", draw_char);
+            printf("%s ", draw_char);
         }
         printf("\n");
     } 
@@ -196,9 +196,6 @@ void free_array(struct phased_array* a) {
 int main(int argc, char** argv) {
     struct phased_array* a = create_array(atof(argv[1]), atof(argv[2]), 2e9, 65e-3);
 
-    //a->w[0][0] = 0 + 0*I;
-
-    //plot_pattern_cut(a, atof(argv[1]));
     plot_uv_pattern(a, 1.0, 0.02);
 
     free_array(a);
